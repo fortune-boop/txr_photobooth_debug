@@ -7,21 +7,21 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#000;display:flex;flex-direction:column;align-items:center;height:100vh;overflow:hidden}
-#video{width:100%;max-width:480px;flex:1;object-fit:cover;display:block}
-#log{width:100%;max-width:480px;background:#111;color:#0f0;font-family:monospace;font-size:12px;padding:8px;height:120px;overflow-y:auto;flex-shrink:0}
+#video{width:100%;max-width:480px;background:#333;display:block;flex-shrink:0;height:50vh;object-fit:cover}
+#log{width:100%;max-width:480px;background:#111;color:#0f0;font-family:monospace;font-size:11px;padding:6px;height:80px;overflow-y:auto;flex-shrink:0}
 #btns{width:100%;max-width:480px;display:flex;gap:8px;padding:8px;background:#222;flex-shrink:0}
-button{flex:1;padding:14px;font-size:14px;cursor:pointer;border:none;border-radius:4px}
-#btnShoot{background:#e8a020;color:#000;font-weight:bold}
-#btnFlip{background:#444;color:#fff}
-#resultImg{display:none;width:100%;max-width:480px;flex-shrink:0}
+button{flex:1;padding:16px;font-size:16px;font-weight:bold;cursor:pointer;border:none;border-radius:6px}
+#btnShoot{background:#e8a020;color:#000}
+#btnFlip{background:#555;color:#fff}
+#resultImg{width:100%;max-width:480px;display:none;flex-shrink:0;height:calc(100vh - 50vh - 80px - 60px);object-fit:contain}
 </style>
 </head>
 <body>
 <video id="video" autoplay playsinline muted></video>
 <div id="log">로그 시작...<br></div>
 <div id="btns">
-  <button id="btnFlip" onclick="flip()">전환</button>
-  <button id="btnShoot" onclick="shoot()">촬영</button>
+  <button id="btnFlip" onclick="flip()">🔄 전환</button>
+  <button id="btnShoot" onclick="shoot()">📷 촬영</button>
 </div>
 <canvas id="canvas" style="display:none"></canvas>
 <img id="resultImg">
@@ -29,9 +29,9 @@ button{flex:1;padding:14px;font-size:14px;cursor:pointer;border:none;border-radi
 <script>
 var stream = null;
 var facing = 'user';
-var log = document.getElementById('log');
 
 function addLog(msg) {
+  var log = document.getElementById('log');
   log.innerHTML += msg + '<br>';
   log.scrollTop = log.scrollHeight;
 }
@@ -46,10 +46,10 @@ async function startCam() {
     var v = document.getElementById('video');
     v.srcObject = stream;
     v.onloadedmetadata = function() {
-      addLog('카메라 OK: ' + v.videoWidth + 'x' + v.videoHeight);
+      addLog('카메라OK: ' + v.videoWidth + 'x' + v.videoHeight + ' ready=' + v.readyState);
     };
   } catch(e) {
-    addLog('카메라 오류: ' + e.message);
+    addLog('카메라오류: ' + e.message);
   }
 }
 
@@ -59,36 +59,33 @@ function flip() {
 }
 
 function shoot() {
-  addLog('촬영 버튼 클릭');
+  addLog('--- 촬영 클릭 ---');
   var v = document.getElementById('video');
-  addLog('readyState=' + v.readyState + ' videoW=' + v.videoWidth + ' srcObject=' + (v.srcObject ? 'OK' : 'null'));
-  
-  var cv = document.getElementById('canvas');
-  var W = v.videoWidth || 640;
+  addLog('ready=' + v.readyState + ' W=' + v.videoWidth + ' H=' + v.videoHeight);
+
+  var W = v.videoWidth  || 640;
   var H = v.videoHeight || 480;
-  cv.width = W;
-  cv.height = H;
+  var cv = document.getElementById('canvas');
+  cv.width = W; cv.height = H;
   var ctx = cv.getContext('2d');
-  
+
   try {
-    if (facing === 'user') {
-      ctx.translate(W, 0);
-      ctx.scale(-1, 1);
-    }
+    ctx.save();
+    if (facing === 'user') { ctx.translate(W, 0); ctx.scale(-1, 1); }
     ctx.drawImage(v, 0, 0, W, H);
+    ctx.restore();
     addLog('drawImage OK');
   } catch(e) {
-    addLog('drawImage 오류: ' + e.message);
-    return;
+    addLog('drawImage 오류: ' + e.message); return;
   }
-  
+
   try {
     var dataUrl = cv.toDataURL('image/jpeg', 0.9);
-    addLog('toDataURL OK: ' + dataUrl.length + 'bytes');
+    addLog('toDataURL OK (' + Math.round(dataUrl.length/1024) + 'KB)');
     var img = document.getElementById('resultImg');
     img.src = dataUrl;
     img.style.display = 'block';
-    addLog('결과 이미지 표시 완료!');
+    addLog('✅ 촬영 성공!');
   } catch(e) {
     addLog('toDataURL 오류: ' + e.message);
   }
